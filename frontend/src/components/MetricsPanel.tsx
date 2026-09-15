@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import { describeConfig, formatDuration, formatTokens } from '../lib/labels'
-import { InfoIcon } from './Tooltip'
+import { Tooltip } from './Tooltip'
 import type { ExperimentResult } from '../types'
 
 type SortKey = 'total' | 'input' | 'output' | 'thinking' | 'duration' | 'ratio'
@@ -172,11 +172,15 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
                       key={key}
                       onClick={() => toggleSort(key)}
                       className="cursor-pointer select-none whitespace-nowrap px-3 py-2 font-medium hover:text-gray-900 dark:hover:text-gray-100"
-                      title={COLUMN_TOOLTIPS[key]}
                     >
                       <div>
-                        {SORT_LABELS[key]}
-                        {COLUMN_TOOLTIPS[key] && <InfoIcon />}
+                        {COLUMN_TOOLTIPS[key] ? (
+                          <Tooltip text={COLUMN_TOOLTIPS[key]}>
+                            {SORT_LABELS[key]}
+                          </Tooltip>
+                        ) : (
+                          SORT_LABELS[key]
+                        )}
                         {sortKey === key ? (desc ? ' ↓' : ' ↑') : ''}
                       </div>
                     </th>

@@ -15,14 +15,3 @@ export function Tooltip({ text, children }: TooltipProps) {
     </span>
   )
 }
-
-export function InfoIcon() {
-  return (
-    <span
-      aria-hidden
-      className="ml-1 inline-flex h-3.5 w-3.5 cursor-help items-center justify-center rounded-full border border-current align-middle text-[9px] font-semibold leading-none text-gray-400 dark:text-gray-500"
-    >
-      i
-    </span>
-  )
-}
