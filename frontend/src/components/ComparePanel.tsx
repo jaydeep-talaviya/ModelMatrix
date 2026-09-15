@@ -165,14 +165,6 @@ export function ComparePanel() {
                       badge={isMaxOut ? 'Largest' : undefined}
                     />
                     <SpecRow
-                      label="Effort levels"
-                      value={meta?.supports_effort ? 'Low / Medium / High' : 'Fixed'}
-                    />
-                    <SpecRow
-                      label="Structured JSON"
-                      value={meta?.supports_structured_output ? 'Yes' : 'No'}
-                    />
-                    <SpecRow
                       label="Price in /1M"
                       value={`$${price.input}`}
                     />
