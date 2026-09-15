@@ -1,5 +1,4 @@
 import { ModelRow } from './ModelRow'
-import { PromptInput } from './PromptInput'
 import { ProviderSelect } from './ProviderSelect'
 import { useTree } from '../store/TreeContext'
 
@@ -8,8 +7,6 @@ export function ConfigurationTree() {
 
   return (
     <div className="space-y-6">
-      <PromptInput />
-
       <ProviderSelect />
 
       {options?.providers

@@ -1,5 +1,6 @@
 import { ConfigurationTree } from './components/ConfigurationTree'
 import { HelpSection } from './components/HelpSection'
+import { PromptInput } from './components/PromptInput'
 import { ResultsPanel } from './components/ResultsPanel'
 import { useTree } from './store/TreeContext'
 
@@ -38,10 +39,15 @@ function App() {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[1fr_1fr]">
+      <main className="mx-auto max-w-7xl px-4 py-6">
+        <section aria-label="Prompt" className="mb-6">
+          <PromptInput />
+        </section>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <section
           aria-label="Prompt and configuration"
-          className="lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-1"
+          className="lg:max-h-[calc(100vh-16rem)] lg:overflow-y-auto lg:pr-1"
         >
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Configuration
@@ -51,13 +57,14 @@ function App() {
 
         <section
           aria-label="Results"
-          className="lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-1"
+          className="lg:max-h-[calc(100vh-16rem)] lg:overflow-y-auto lg:pr-1"
         >
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Results
           </h2>
           <ResultsPanel />
         </section>
+        </div>
       </main>
 
       <div className="mx-auto max-w-7xl px-4 pb-8">
