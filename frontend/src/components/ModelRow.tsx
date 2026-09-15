@@ -1,5 +1,6 @@
 import { Checkbox } from './Checkbox'
 import { EffortSelect } from './EffortSelect'
+import { ModelName } from './ModelName'
 import { StructuredSelect } from './StructuredSelect'
 import { useTree } from '../store/TreeContext'
 import type { ModelOption, ProviderId } from '../types'
@@ -27,7 +28,7 @@ export function ModelRow({ provider, model }: ModelRowProps) {
         }
         label={
           <>
-            <span className="font-medium">{model.display_name}</span>
+            <ModelName provider={provider} modelId={model.id} />
             <span className="ml-2 text-xs text-gray-400">{model.id}</span>
           </>
         }
