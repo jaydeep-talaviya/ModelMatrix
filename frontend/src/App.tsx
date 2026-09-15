@@ -1,3 +1,4 @@
+import { ConfigurationTree } from './components/ConfigurationTree'
 import { useTree } from './store/TreeContext'
 
 function App() {
@@ -40,9 +41,7 @@ function App() {
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Configuration
           </h2>
-          <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400 dark:border-gray-700">
-            Prompt input and the configuration tree render here (Phase 6).
-          </div>
+          <ConfigurationTree />
         </section>
 
         <section aria-label="Results">
