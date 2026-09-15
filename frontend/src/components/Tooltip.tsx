@@ -1,18 +1,53 @@
-import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 
 interface TooltipProps {
   content: ReactNode
   children: ReactNode
 }
 
+interface Coords {
+  top: number
+  left: number
+}
+
 export function Tooltip({ content, children }: TooltipProps) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const [coords, setCoords] = useState<Coords | null>(null)
+
+  const show = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    setCoords({ top: rect.top, left: rect.left + rect.width / 2 })
+  }, [])
+
+  const hide = useCallback(() => setCoords(null), [])
+
   return (
-    <span className="group relative inline-flex">
-      {children}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 hidden max-w-xs -translate-x-1/2 rounded-lg border border-gray-200 bg-white p-2.5 text-[11px] font-normal leading-snug text-gray-600 shadow-lg group-hover:block dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-        {content}
+    <>
+      <span
+        ref={ref}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        className="inline-flex"
+      >
+        {children}
       </span>
-    </span>
+      {coords &&
+        createPortal(
+          <div
+            role="tooltip"
+            className="pointer-events-none fixed z-50 max-w-xs -translate-x-1/2 rounded-lg border border-gray-200 bg-white p-2.5 text-[11px] font-normal leading-snug text-gray-600 shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            style={{ bottom: window.innerHeight - coords.top + 8, left: coords.left }}
+          >
+            {content}
+          </div>,
+          document.body,
+        )}
+    </>
   )
 }
 
