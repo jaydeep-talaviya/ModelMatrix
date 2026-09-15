@@ -5,6 +5,7 @@ import { describeConfig, formatDuration, formatTokens } from '../lib/labels'
 import { toExperimentRequest } from '../lib/toRequest'
 import { useTree } from '../store/TreeContext'
 import type { RunResult } from '../types'
+import { MetricsPanel } from './MetricsPanel'
 import { ResultCard } from './ResultCard'
 
 type RunPhase = 'idle' | 'running' | 'done' | 'error'
@@ -17,7 +18,7 @@ export function ResultsPanel() {
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const [durationMs, setDurationMs] = useState<number | null>(null)
   const [now, setNow] = useState(0)
-  const [view, setView] = useState<'cards' | 'table'>('cards')
+  const [view, setView] = useState<'cards' | 'insights' | 'table'>('cards')
   const abortRef = useRef<AbortController | null>(null)
 
   const leafCount = useMemo(() => {
@@ -129,6 +130,17 @@ export function ResultsPanel() {
               Cards
             </button>
             <button
+              onClick={() => setView('insights')}
+              className={
+                'rounded-md px-2 py-1 text-xs ' +
+                (view === 'insights'
+                  ? 'bg-gray-200 font-medium dark:bg-gray-800'
+                  : 'text-gray-600 dark:text-gray-400')
+              }
+            >
+              Insights
+            </button>
+            <button
               onClick={() => setView('table')}
               className={
                 'rounded-md px-2 py-1 text-xs ' +
@@ -172,7 +184,9 @@ export function ResultsPanel() {
             <span>{formatDuration(durationMs)}</span>
           </div>
 
-          {view === 'table' ? (
+          {view === 'insights' ? (
+            <MetricsPanel results={results} />
+          ) : view === 'table' ? (
             <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
               <table className="w-full text-left text-xs">
                 <thead className="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
