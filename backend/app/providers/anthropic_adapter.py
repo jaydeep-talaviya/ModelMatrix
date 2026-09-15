@@ -5,11 +5,10 @@ import json
 from anthropic import AsyncAnthropic
 
 from app.core.catalog import get_model
-from app.core.structured_schemas import csv_suffix, pydantic_json_schema
+from app.core.structured_schemas import pydantic_json_schema
 from app.providers.base import ApiKeyError, ProviderAdapter
 from app.schemas.experiment import ExperimentConfig
 from app.schemas.results import Usage
-from app.schemas.selection import StructuredOutputFormat
 
 EMIT_TOOL = {
     "name": "emit_result",
@@ -36,19 +35,15 @@ class AnthropicAdapter(ProviderAdapter):
 
     def _build_params(self, config: ExperimentConfig, prompt: str) -> dict:
         spec = get_model(config.provider, config.model_id)
-        user_prompt = prompt
         params: dict = {
             "model": config.model_id,
             "max_tokens": 4096,
-            "messages": [{"role": "user", "content": user_prompt}],
+            "messages": [{"role": "user", "content": prompt}],
         }
 
         if config.structured_output:
-            if config.format == StructuredOutputFormat.PYDANTIC:
-                params["tools"] = [EMIT_TOOL]
-                params["tool_choice"] = {"type": "tool", "name": "emit_result"}
-            else:  # csv
-                params["messages"] = [{"role": "user", "content": prompt + csv_suffix()}]
+            params["tools"] = [EMIT_TOOL]
+            params["tool_choice"] = {"type": "tool", "name": "emit_result"}
 
         if spec.supports_effort:
             budget = EFFORT_TO_THINKING_BUDGET.get(config.effort.value)

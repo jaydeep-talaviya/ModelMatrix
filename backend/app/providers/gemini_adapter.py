@@ -4,11 +4,10 @@ from google import genai
 from google.genai import types
 
 from app.core.catalog import get_model
-from app.core.structured_schemas import csv_suffix, pydantic_json_schema
+from app.core.structured_schemas import pydantic_json_schema
 from app.providers.base import ApiKeyError, ProviderAdapter
 from app.schemas.experiment import ExperimentConfig
 from app.schemas.results import Usage
-from app.schemas.selection import StructuredOutputFormat
 
 EFFORT_TO_THINKING_BUDGET: dict[str, int] = {
     "low": 0,
@@ -29,16 +28,12 @@ class GeminiAdapter(ProviderAdapter):
 
     def _build_config(self, config: ExperimentConfig, prompt: str) -> tuple[str, str, types.GenerateContentConfig]:
         spec = get_model(config.provider, config.model_id)
-        user_prompt = prompt
-        schema: dict | None = None
         mime: str | None = None
+        schema: dict | None = None
 
         if config.structured_output:
-            if config.format == StructuredOutputFormat.PYDANTIC:
-                mime = "application/json"
-                schema = pydantic_json_schema()
-            else:  # csv
-                user_prompt = prompt + csv_suffix()
+            mime = "application/json"
+            schema = pydantic_json_schema()
 
         gen_config = types.GenerateContentConfig(response_mime_type=mime, response_schema=schema)
 
@@ -47,7 +42,7 @@ class GeminiAdapter(ProviderAdapter):
             if budget:
                 gen_config.thinking_config = types.ThinkingConfig(thinking_budget=budget)
 
-        return config.model_id, user_prompt, gen_config
+        return config.model_id, prompt, gen_config
 
     async def _execute(self, config: ExperimentConfig, prompt: str) -> tuple[str, Usage]:
         client = self._client()

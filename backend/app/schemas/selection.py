@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ProviderId(str, Enum):
@@ -17,28 +17,10 @@ class EffortLevel(str, Enum):
     HIGH = "high"
 
 
-class StructuredOutputFormat(str, Enum):
-    CSV = "csv"
-    PYDANTIC = "pydantic"
-
-
-class StructuredOutputSelection(BaseModel):
-    enabled: bool = False
-    format: StructuredOutputFormat | None = None
-
-    @model_validator(mode="after")
-    def _require_format_when_enabled(self) -> StructuredOutputSelection:
-        if self.enabled and self.format is None:
-            raise ValueError("format is required when structured output is enabled")
-        if not self.enabled and self.format is not None:
-            raise ValueError("format must be null when structured output is disabled")
-        return self
-
-
 class ModelSelection(BaseModel):
     model_id: str
     efforts: list[EffortLevel] = Field(default_factory=list)
-    structured: list[StructuredOutputSelection] = Field(default_factory=list)
+    structured: bool = False
 
     @field_validator("model_id")
     @classmethod

@@ -4,8 +4,6 @@ export type ProviderId = 'openai' | 'gemini' | 'anthropic'
 
 export type EffortLevel = 'low' | 'medium' | 'high'
 
-export type StructuredOutputFormat = 'csv' | 'pydantic'
-
 export type ExperimentStatus = 'success' | 'error'
 
 export interface ModelOption {
@@ -21,22 +19,16 @@ export interface ProviderOption {
   configured: boolean
   models: ModelOption[]
   efforts: EffortLevel[]
-  structured_output_formats: StructuredOutputFormat[]
 }
 
 export interface OptionsResponse {
   providers: ProviderOption[]
 }
 
-export interface StructuredOutputSelection {
-  enabled: boolean
-  format: StructuredOutputFormat | null
-}
-
 export interface ModelSelection {
   model_id: string
   efforts: EffortLevel[]
-  structured: StructuredOutputSelection[]
+  structured: boolean
 }
 
 export interface ProviderSelection {
@@ -54,7 +46,6 @@ export interface ExperimentConfig {
   model_id: string
   effort: EffortLevel
   structured_output: boolean
-  format: StructuredOutputFormat | null
   id: string
 }
 

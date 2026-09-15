@@ -21,7 +21,6 @@ def test_options_endpoint_shape():
         assert provider["display_name"]
         assert provider["models"], f"no models for {provider['id']}"
         assert provider["efforts"] == ["low", "medium", "high"]
-        assert set(provider["structured_output_formats"]) == {"csv", "pydantic"}
         assert "configured" in provider and provider["configured"] is False
 
 
@@ -35,7 +34,7 @@ def test_runs_endpoint_returns_error_results_without_keys():
                     {
                         "model_id": "gpt-4o",
                         "efforts": ["low"],
-                        "structured": [{"enabled": False}],
+                        "structured": False,
                     }
                 ],
             }

@@ -1,7 +1,7 @@
 import pytest
 
 from app.core.catalog import get_model, models_for_provider, ModelSpec
-from app.core.structured_schemas import csv_suffix, pydantic_json_schema
+from app.core.structured_schemas import pydantic_json_schema
 from app.providers.base import ProviderAdapter
 from app.providers.openai_adapter import OpenAIAdapter
 from app.providers.gemini_adapter import GeminiAdapter
@@ -48,7 +48,6 @@ def test_structured_schemas_shape():
     assert "summary" in schema["properties"]
     assert "answer" in schema["properties"]
     assert schema["required"] == ["summary", "answer", "key_details"]
-    assert "CSV" in csv_suffix()
 
 
 def test_usage_model_defaults():
@@ -89,9 +88,9 @@ class _FakeAdapter(ProviderAdapter):
         return text, usage
 
 
-def _cfg():
+def _cfg(structured=False):
     return ExperimentConfig(
-        provider="openai", model_id="gpt-4o", effort="low", structured_output=False
+        provider="openai", model_id="gpt-4o", effort="low", structured_output=structured
     )
 
 
@@ -133,47 +132,45 @@ async def test_run_reports_missing_api_key():
     assert "API key is not configured" in result.error
 
 
-def _config(provider, model, effort="low", fmt=None):
-    return ExperimentConfig(
-        provider=provider,
-        model_id=model,
-        effort=effort,
-        structured_output=fmt is not None,
-        format=fmt,
-    )
-
-
 from app.providers.registry import get_adapter as _get_adapter  # noqa: E402
 
 
-def test_openai_pydantic_mapping():
+def test_openai_structured_mapping():
     adapter = _get_adapter(ProviderId.OPENAI)
-    model, kwargs = adapter._build_kwargs(_config("openai", "gpt-4o", fmt="pydantic"), "P")
+    kwargs = adapter._build_kwargs(_cfg(structured=True), "P")
     rf = kwargs["response_format"]
     assert rf["type"] == "json_schema"
     assert rf["json_schema"]["name"] == "result"
     assert "reasoning_effort" not in kwargs  # gpt-4o does not support effort
 
 
+def test_openai_plain_leaves_prompt_unchanged():
+    adapter = _get_adapter(ProviderId.OPENAI)
+    kwargs = adapter._build_kwargs(_cfg(structured=False), "P")
+    assert "response_format" not in kwargs
+    assert kwargs["messages"][0]["content"] == "P"
+
+
 def test_openai_effort_mapping_on_supported_model():
     adapter = _get_adapter(ProviderId.OPENAI)
-    _, kwargs = adapter._build_kwargs(_config("openai", "o3-mini", effort="high"), "P")
+    kwargs = adapter._build_kwargs(_config("openai", "o3-mini", effort="high"), "P")
     assert kwargs["reasoning_effort"] == "high"
 
 
-def test_openai_csv_appends_instruction():
-    adapter = _get_adapter(ProviderId.OPENAI)
-    model, kwargs = adapter._build_kwargs(_config("openai", "gpt-4o", fmt="csv"), "P")
-    assert "CSV" in kwargs["messages"][0]["content"]
-    assert "response_format" not in kwargs
-
-
-def test_gemini_pydantic_mapping():
+def test_gemini_structured_mapping():
     adapter = _get_adapter(ProviderId.GEMINI)
-    model, prompt, cfg = adapter._build_config(_config("gemini", "gemini-2.0-flash", fmt="pydantic"), "P")
+    _, _, cfg = adapter._build_config(_config("gemini", "gemini-2.0-flash", structured=True), "P")
     assert cfg.response_mime_type == "application/json"
     assert cfg.response_schema["type"] == "object"
     assert cfg.thinking_config is None
+
+
+def test_gemini_plain_leaves_prompt_unchanged():
+    adapter = _get_adapter(ProviderId.GEMINI)
+    _, prompt, cfg = adapter._build_config(_config("gemini", "gemini-2.0-flash", structured=False), "P")
+    assert prompt == "P"
+    assert cfg.response_mime_type is None
+    assert cfg.response_schema is None
 
 
 def test_gemini_effort_maps_to_thinking_budget():
@@ -183,15 +180,24 @@ def test_gemini_effort_maps_to_thinking_budget():
     assert cfg.thinking_config.thinking_budget == 8192
 
 
-def test_anthropic_pydantic_mapping():
+def test_anthropic_structured_mapping():
     adapter = _get_adapter(ProviderId.ANTHROPIC)
-    params = adapter._build_params(_config("anthropic", "claude-3-5-sonnet", fmt="pydantic"), "P")
+    params = adapter._build_params(_config("anthropic", "claude-3-5-sonnet", structured=True), "P")
     assert params["tool_choice"] == {"type": "tool", "name": "emit_result"}
     assert params["tools"][0]["name"] == "emit_result"
 
 
-def test_anthropic_csv_appends_instruction():
+def test_anthropic_plain_leaves_prompt_unchanged():
     adapter = _get_adapter(ProviderId.ANTHROPIC)
-    params = adapter._build_params(_config("anthropic", "claude-3-5-sonnet", fmt="csv"), "P")
-    assert "CSV" in params["messages"][0]["content"]
+    params = adapter._build_params(_config("anthropic", "claude-3-5-sonnet", structured=False), "P")
     assert "tools" not in params
+    assert params["messages"][0]["content"] == "P"
+
+
+def _config(provider, model, effort="low", structured=False):
+    return ExperimentConfig(
+        provider=provider,
+        model_id=model,
+        effort=effort,
+        structured_output=structured,
+    )

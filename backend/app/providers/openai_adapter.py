@@ -3,11 +3,10 @@ from __future__ import annotations
 from openai import AsyncOpenAI
 
 from app.core.catalog import get_model
-from app.core.structured_schemas import csv_suffix, pydantic_json_schema
+from app.core.structured_schemas import pydantic_json_schema
 from app.providers.base import ApiKeyError, ProviderAdapter
 from app.schemas.experiment import ExperimentConfig
 from app.schemas.results import Usage
-from app.schemas.selection import StructuredOutputFormat
 
 
 class OpenAIAdapter(ProviderAdapter):
@@ -20,32 +19,29 @@ class OpenAIAdapter(ProviderAdapter):
             raise ApiKeyError("openai API key is not configured")
         return AsyncOpenAI(api_key=api_key)
 
-    def _build_kwargs(self, config: ExperimentConfig, prompt: str) -> tuple[str, dict]:
+    def _build_kwargs(self, config: ExperimentConfig, prompt: str) -> dict:
         spec = get_model(config.provider, config.model_id)
         messages = [{"role": "user", "content": prompt}]
         kwargs: dict = {"model": config.model_id, "messages": messages}
 
         if config.structured_output:
-            if config.format == StructuredOutputFormat.PYDANTIC:
-                kwargs["response_format"] = {
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "result",
-                        "schema": pydantic_json_schema(),
-                        "strict": True,
-                    },
-                }
-            else:  # csv
-                messages[0] = {"role": "user", "content": prompt + csv_suffix()}
+            kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "result",
+                    "schema": pydantic_json_schema(),
+                    "strict": True,
+                },
+            }
 
         if spec.supports_effort:
             kwargs["reasoning_effort"] = config.effort.value
 
-        return config.model_id, kwargs
+        return kwargs
 
     async def _execute(self, config: ExperimentConfig, prompt: str) -> tuple[str, Usage]:
         client = self._client()
-        model, kwargs = self._build_kwargs(config, prompt)
+        kwargs = self._build_kwargs(config, prompt)
         resp = await client.chat.completions.create(**kwargs)
 
         text = (resp.choices[0].message.content or "").strip() if resp.choices else ""

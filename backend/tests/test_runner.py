@@ -49,10 +49,7 @@ def test_run_experiments_runs_all_branches(monkeypatch):
                     {
                         "model_id": "gpt-4o",
                         "efforts": ["low", "high"],
-                        "structured": [
-                            {"enabled": True, "format": "pydantic"},
-                            {"enabled": False},
-                        ],
+                        "structured": True,
                     }
                 ],
             }
@@ -60,10 +57,10 @@ def test_run_experiments_runs_all_branches(monkeypatch):
     )
     _patch_registry(monkeypatch, {"openai": _OkayAdapter(None)})
     result = asyncio.run(run_experiments(request))
-    assert len(result.configs) == 4
-    assert len(result.results) == 4
-    assert result.succeeded_count == 4
-    assert result.total_tokens == 60
+    assert len(result.configs) == 2
+    assert len(result.results) == 2
+    assert result.succeeded_count == 2
+    assert result.total_tokens == 30
     assert all(r.usage.output_tokens == 10 for r in result.results)
 
 

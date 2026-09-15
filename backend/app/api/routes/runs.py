@@ -6,12 +6,7 @@ from app.core.runner import run_experiments
 from app.providers.registry import get_adapter
 from app.schemas.options import ModelOption, OptionsResponse, ProviderOption
 from app.schemas.run import RunResult
-from app.schemas.selection import (
-    EffortLevel,
-    ExperimentRequest,
-    ProviderId,
-    StructuredOutputFormat,
-)
+from app.schemas.selection import EffortLevel, ExperimentRequest, ProviderId
 
 router = APIRouter(tags=["runs"])
 
@@ -47,7 +42,6 @@ def options() -> OptionsResponse:
                 configured=adapter.is_configured(),
                 models=models,
                 efforts=[e for e in EffortLevel],
-                structured_output_formats=[f for f in StructuredOutputFormat],
             )
         )
     return OptionsResponse(providers=providers)

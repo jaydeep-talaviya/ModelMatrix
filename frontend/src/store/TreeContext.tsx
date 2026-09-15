@@ -10,18 +10,12 @@ import {
 } from 'react'
 
 import { getOptions } from '../lib/api'
-import type {
-  EffortLevel,
-  ModelOption,
-  OptionsResponse,
-  ProviderId,
-  StructuredOutputSelection,
-} from '../types'
+import type { EffortLevel, ModelOption, OptionsResponse, ProviderId } from '../types'
 
 interface ModelBranch {
   modelId: string
   efforts: EffortLevel[]
-  structured: StructuredOutputSelection[]
+  structured: boolean
 }
 
 type ModelMap = Record<string, ModelBranch>
@@ -43,14 +37,10 @@ type Action =
   | { type: 'TOGGLE_PROVIDER'; provider: ProviderId }
   | { type: 'TOGGLE_MODEL'; provider: ProviderId; modelId: string; supportsEffort: boolean }
   | { type: 'SET_EFFORT'; provider: ProviderId; modelId: string; effort: EffortLevel; checked: boolean }
-  | { type: 'SET_STRUCTURED'; provider: ProviderId; modelId: string; selections: StructuredOutputSelection[] }
+  | { type: 'SET_STRUCTURED'; provider: ProviderId; modelId: string; enabled: boolean }
   | { type: 'CLEAR' }
 
 const initialState: TreeState = { prompt: '', branches: {} }
-
-function setStructuredChoices(branch: ModelBranch, selections: StructuredOutputSelection[]): ModelBranch {
-  return { ...branch, structured: selections }
-}
 
 function reducer(state: TreeState, action: Action): TreeState {
   switch (action.type) {
@@ -77,7 +67,7 @@ function reducer(state: TreeState, action: Action): TreeState {
         models[action.modelId] = {
           modelId: action.modelId,
           efforts: action.supportsEffort ? [] : ['medium'],
-          structured: [],
+          structured: false,
         }
       }
       return {
@@ -120,7 +110,7 @@ function reducer(state: TreeState, action: Action): TreeState {
             ...provider,
             models: {
               ...provider.models,
-              [action.modelId]: setStructuredChoices(model, action.selections),
+              [action.modelId]: { ...model, structured: action.enabled },
             },
           },
         },

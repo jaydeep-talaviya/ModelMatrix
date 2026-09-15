@@ -15,17 +15,6 @@ PYDANTIC_SCHEMA: dict[str, object] = {
     "additionalProperties": False,
 }
 
-CSV_INSTRUCTION = (
-    "\n\nRespond as CSV with a header row and exactly one data row. "
-    "Columns: summary, answer, key_details. "
-    "Quote fields with double quotes when they contain commas or newlines. "
-    "key_details must be semicolon-separated. No markdown, no extra text."
-)
-
 
 def pydantic_json_schema() -> dict[str, object]:
     return PYDANTIC_SCHEMA
-
-
-def csv_suffix() -> str:
-    return CSV_INSTRUCTION

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from app.schemas.selection import EffortLevel, ProviderId, StructuredOutputFormat
+from app.schemas.selection import EffortLevel, ProviderId
 
 
 class ModelOption(BaseModel):
@@ -18,7 +18,6 @@ class ProviderOption(BaseModel):
     configured: bool
     models: list[ModelOption]
     efforts: list[EffortLevel]
-    structured_output_formats: list[StructuredOutputFormat]
 
 
 class OptionsResponse(BaseModel):
