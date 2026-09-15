@@ -35,6 +35,8 @@ class AnthropicAdapter(PuterFallbackMixin, ProviderAdapter):
         return AsyncAnthropic(api_key=api_key)
 
     async def list_models(self) -> list[str]:
+        if self.uses_puter():
+            return await self._puter_models()
         if not self._settings.has_provider_key(self.provider):
             return []
         try:

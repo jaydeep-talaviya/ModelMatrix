@@ -10,6 +10,7 @@ from app.providers.registry import get_adapter
 from app.schemas.experiment import ExperimentConfig
 from app.schemas.results import ExperimentResult, Usage
 from app.schemas.selection import ProviderId
+from app.schemas.results import Usage as _Usage
 
 ADAPTER_BY_PROVIDER = {
     ProviderId.OPENAI: OpenAIAdapter,
@@ -192,6 +193,102 @@ def test_anthropic_plain_leaves_prompt_unchanged():
     params = adapter._build_params(_config("anthropic", "claude-3-5-sonnet", structured=False), "P")
     assert "tools" not in params
     assert params["messages"][0]["content"] == "P"
+
+
+# --- Puter fallback -----------------------------------------------------------
+
+
+class _FakeSettings:
+    puter_auth_token = "token"
+    puter_route = ""
+
+    def __init__(self, keys):
+        self._keys = keys
+
+    def has_provider_key(self, provider_id):
+        return provider_id in self._keys
+
+    @property
+    def puter_route_providers(self):
+        return {p.strip().lower() for p in (self.puter_route or "").split(",") if p.strip()}
+
+
+def test_puter_used_when_key_missing():
+    adapter = OpenAIAdapter(_FakeSettings(["gemini"]))
+    assert adapter.uses_puter() is True
+    assert adapter.is_configured() is True
+    assert adapter.configured_via == "puter"
+
+
+def test_puter_not_used_without_token():
+    settings = _FakeSettings(["gemini"])
+    settings.puter_auth_token = None
+    assert OpenAIAdapter(settings).uses_puter() is False
+
+
+def test_puter_route_forces_with_key():
+    settings = _FakeSettings(["openai"])
+    settings.puter_route = "openai"
+    adapter = OpenAIAdapter(settings)
+    assert adapter.uses_puter() is True
+    assert adapter.configured_via == "puter"
+
+
+def test_native_used_when_key_present_and_not_routed():
+    settings = _FakeSettings(["openai"])
+    adapter = OpenAIAdapter(settings)
+    assert adapter.uses_puter() is False
+    assert adapter.configured_via == "native"
+
+
+def test_puter_aliases_strip_vendor_prefix():
+    adapter = OpenAIAdapter(_FakeSettings([]))
+    assert adapter._puter_model_id(_config("openai", "openai:openai/gpt-5.6-luna")) == "gpt-5.6-luna"
+
+
+def test_puter_parse_plain_openai_shape():
+    result = {
+        "message": {"role": "assistant", "content": " OK "},
+        "usage": {"prompt_tokens": 13, "completion_tokens": 1, "cached_tokens": 0},
+        "finish_reason": "stop",
+    }
+    text, usage = OpenAIAdapter._parse_puter_result(result, usage_cls=_Usage)
+    assert text == "OK"
+    assert usage.input_tokens == 13
+    assert usage.output_tokens == 1
+    assert usage.total_tokens == 14
+
+
+def test_puter_parse_claude_blocks():
+    result = {
+        "message": {"role": "assistant", "content": [{"type": "text", "text": "hi"}]},
+        "usage": {"input_tokens": 7, "output_tokens": 3},
+    }
+    text, usage = OpenAIAdapter._parse_puter_result(result, usage_cls=_Usage)
+    assert text == "hi"
+    assert usage.input_tokens == 7
+    assert usage.output_tokens == 3
+
+
+def test_puter_parse_tool_call_structured():
+    result = {
+        "message": {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "emit_result", "arguments": '{"answer": "x"}'},
+                }
+            ],
+        },
+        "usage": {"prompt_tokens": 52, "completion_tokens": 14},
+        "finish_reason": "tool_calls",
+    }
+    text, usage = OpenAIAdapter._parse_puter_result(result, usage_cls=_Usage)
+    assert '"answer": "x"' in text
+    assert usage.total_tokens == 66
 
 
 def _config(provider, model, effort="low", structured=False):

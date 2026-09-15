@@ -21,9 +21,16 @@ class Settings(BaseSettings):
     gemini_api_key: str | None = None
     anthropic_api_key: str | None = None
     puter_auth_token: str | None = None
+    # Comma-separated providers to force through Puter even when their own key
+    # is set (e.g. a key with no credits): "openai,anthropic".
+    puter_route: str = ""
 
     def has_provider_key(self, provider_id: str) -> bool:
         return bool(getattr(self, f"{provider_id}_api_key", None))
+
+    @property
+    def puter_route_providers(self) -> set[str]:
+        return {p.strip().lower() for p in (self.puter_route or "").split(",") if p.strip()}
 
 
 @lru_cache
