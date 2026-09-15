@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { formatCompactTokens } from '../lib/labels'
+import { formatCost, priceFor } from '../lib/pricing'
 import { useTree } from '../store/TreeContext'
 import type { ProviderId } from '../types'
 import { ModelName } from './ModelName'
@@ -9,10 +10,15 @@ import { ModelPicker, type PickedModel } from './ModelPicker'
 const MAX_SLOTS = 3
 const MIN_SLOTS = 2
 
+const DEFAULT_INPUT_TOKENS = 10_000
+const DEFAULT_OUTPUT_TOKENS = 2_000
+
 export function ComparePanel() {
   const { options } = useTree()
   const [slots, setSlots] = useState<PickedModel[]>([])
   const seeded = useRef(false)
+  const [inputTokens, setInputTokens] = useState(DEFAULT_INPUT_TOKENS)
+  const [outputTokens, setOutputTokens] = useState(DEFAULT_OUTPUT_TOKENS)
 
   const allModels = useMemo(() => {
     return (options?.providers ?? []).flatMap((p) =>
@@ -53,13 +59,33 @@ export function ComparePanel() {
       .find((p) => p.id === slot.provider)
       ?.models.find((m) => m.id === slot.modelId)
 
-  const specSlots = slots
-
-  const maxContext = specSlots.length
-    ? Math.max(...specSlots.map((s) => metaFor(s)?.context_window ?? 0))
+  const maxContext = slots.length
+    ? Math.max(...slots.map((s) => metaFor(s)?.context_window ?? 0))
     : 0
-  const maxOutput = specSlots.length
-    ? Math.max(...specSlots.map((s) => metaFor(s)?.max_output_tokens ?? 0))
+  const maxOutput = slots.length
+    ? Math.max(...slots.map((s) => metaFor(s)?.max_output_tokens ?? 0))
+    : 0
+
+  const costRows = useMemo(() => {
+    return slots.map((slot) => {
+      const price = priceFor(slot.provider, slot.modelId)
+      const cost =
+        (inputTokens / 1_000_000) * price.input +
+        (outputTokens / 1_000_000) * price.output
+      return {
+        key: `${slot.provider}:${slot.modelId}`,
+        name: metaFor(slot)?.display_name ?? slot.modelId,
+        cost,
+        price,
+      }
+    })
+  }, [slots, inputTokens, outputTokens, options])
+
+  const maxCost = costRows.length
+    ? Math.max(...costRows.map((r) => r.cost))
+    : 0
+  const minCost = costRows.length
+    ? Math.min(...costRows.map((r) => r.cost))
     : 0
 
   return (
@@ -71,7 +97,7 @@ export function ComparePanel() {
         Compare models
       </h2>
       <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-        Pick 2–3 models to see their specs side by side.
+        Pick 2–3 models to see their specs and estimated cost side by side.
       </p>
 
       <div className="flex flex-wrap items-end gap-4">
@@ -104,13 +130,16 @@ export function ComparePanel() {
         )}
       </div>
 
-      {specSlots.length >= MIN_SLOTS && (
+      {slots.length >= MIN_SLOTS && (
         <>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {specSlots.map((slot) => {
+            {slots.map((slot) => {
               const meta = metaFor(slot)
-              const isMaxCtx = meta != null && meta.context_window === maxContext
-              const isMaxOut = meta != null && meta.max_output_tokens === maxOutput
+              const price = priceFor(slot.provider, slot.modelId)
+              const isMaxCtx =
+                meta != null && meta.context_window === maxContext
+              const isMaxOut =
+                meta != null && meta.max_output_tokens === maxOutput
               return (
                 <div
                   key={`${slot.provider}:${slot.modelId}`}
@@ -143,11 +172,97 @@ export function ComparePanel() {
                       label="Structured JSON"
                       value={meta?.supports_structured_output ? 'Yes' : 'No'}
                     />
+                    <SpecRow
+                      label="Price in /1M"
+                      value={`$${price.input}`}
+                    />
+                    <SpecRow
+                      label="Price out /1M"
+                      value={`$${price.output}`}
+                    />
                   </dl>
                 </div>
               )
             })}
           </div>
+
+          <div className="mt-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
+            <h3 className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+              Estimated cost per query
+            </h3>
+            <div className="mt-2 flex flex-wrap items-center gap-4">
+              <label className="block">
+                <span className="mb-0.5 block text-[11px] text-gray-500 dark:text-gray-400">
+                  Input tokens
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={inputTokens}
+                  onChange={(e) =>
+                    setInputTokens(Math.max(0, Math.floor(Number(e.target.value) || 0)))
+                  }
+                  className="w-32 rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-0.5 block text-[11px] text-gray-500 dark:text-gray-400">
+                  Output tokens
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={outputTokens}
+                  onChange={(e) =>
+                    setOutputTokens(Math.max(0, Math.floor(Number(e.target.value) || 0)))
+                  }
+                  className="w-32 rounded-lg border border-gray-300 px-2 py-1 text-xs text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                />
+              </label>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {costRows.map((row) => {
+                const isLowest =
+                  minCost >= 0 && maxCost > 0 && row.cost === minCost
+                const width = maxCost > 0 ? (row.cost / maxCost) * 100 : 0
+                return (
+                  <div key={row.key} className="flex items-center gap-3">
+                    <span className="w-44 shrink-0 truncate text-xs text-gray-700 dark:text-gray-200">
+                      {row.name}
+                    </span>
+                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                      <div
+                        className={
+                          'h-full rounded-full ' +
+                          (isLowest
+                            ? 'bg-emerald-500'
+                            : 'bg-gray-300 dark:bg-gray-600')
+                        }
+                        style={{ width: `${width}%` }}
+                      />
+                    </div>
+                    <span className="w-16 shrink-0 text-right text-xs font-medium text-gray-700 dark:text-gray-200">
+                      {formatCost(row.cost)}
+                    </span>
+                    {isLowest && (
+                      <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                        Lowest
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-gray-400">
+              Based on list prices (in × input + out × output ÷ 1,000,000) — an
+              estimate, not your actual bill. Batch, caching and volume discounts
+              are excluded. 'Lowest' marks the cheapest for these token counts.
+            </p>
+          </div>
+
           <p className="mt-2 text-[11px] text-gray-400">
             'Longest' / 'Largest' marks the highest value — matched to your goal,
             not a judgment that a model is better.
