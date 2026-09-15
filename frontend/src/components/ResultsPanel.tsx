@@ -217,7 +217,7 @@ export function ResultsPanel() {
               </table>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               {results.map((result) => (
                 <ResultCard key={result.config_id} result={result} />
               ))}
