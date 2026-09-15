@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { formatCompactTokens } from '../lib/labels'
+import { describeModel } from '../lib/modelInfo'
 import { formatCost, priceFor } from '../lib/pricing'
 import { useTree } from '../store/TreeContext'
 import type { ProviderId } from '../types'
@@ -96,9 +97,18 @@ export function ComparePanel() {
       <h2 className="mb-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
         Compare models
       </h2>
-      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+      <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
         Pick 2–3 models to see their specs and estimated cost side by side.
       </p>
+
+      <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] leading-relaxed text-sky-900 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-300">
+        What you're comparing: <strong>API token prices</strong> — the per-token
+        rates developers pay when calling these models through each provider's
+        API (these are <em>not</em> chat-subscription plans). Your bill is simply{' '}
+        <strong>tokens used × rate</strong>, so in/out token price, context size
+        and max output decide both cost and quality. Cheaper isn't automatically
+        better — match the model to the workload (flagship vs fast tier).
+      </div>
 
       <div className="flex flex-wrap items-end gap-4">
         {slots.map((slot, index) => (
@@ -152,6 +162,9 @@ export function ComparePanel() {
                       className="text-sm"
                     />
                   </div>
+                  <p className="mb-3 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+                    {describeModel(slot.provider, slot.modelId)}
+                  </p>
                   <dl className="space-y-1.5 text-xs">
                     <SpecRow label="Provider" value={slot.provider} />
                     <SpecRow

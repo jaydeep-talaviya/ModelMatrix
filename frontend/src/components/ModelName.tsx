@@ -1,4 +1,5 @@
 import { formatCompactTokens } from '../lib/labels'
+import { describeModel } from '../lib/modelInfo'
 import { priceFor } from '../lib/pricing'
 import { useTree } from '../store/TreeContext'
 import type { ProviderId } from '../types'
@@ -28,6 +29,9 @@ export function ModelName({ provider, modelId, className }: ModelNameProps) {
         <span className="block truncate text-[10px] text-gray-400 dark:text-gray-500">
           {modelId}
         </span>
+      </span>
+      <span className="mt-1 block text-[10px] leading-snug text-gray-500 dark:text-gray-400">
+        {describeModel(provider, modelId)}
       </span>
       <span className="mt-1 block space-y-0.5">
         <ModelInfoRow label="Provider" value={kind} />
