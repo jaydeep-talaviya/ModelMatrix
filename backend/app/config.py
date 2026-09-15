@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # Comma-separated providers that run through Puter even when their own key
     # is set (e.g. a key with no credits): "openai,anthropic".
     provider_using_puter: str = ""
+    # Free-tier Puter throttles concurrent requests; cap and retry them.
+    puter_max_concurrency: int = 2
+    puter_max_retries: int = 3
+    puter_retry_backoff_s: float = 1.0
 
     def has_provider_key(self, provider_id: str) -> bool:
         return bool(getattr(self, f"{provider_id}_api_key", None))

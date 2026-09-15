@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { runExperiments } from '../lib/api'
+import { download, toCsv, toMarkdown, tsPrefix } from '../lib/export'
 import { formatDuration, formatTokens } from '../lib/labels'
 import { toExperimentRequest } from '../lib/toRequest'
 import { useTree } from '../store/TreeContext'
@@ -117,8 +118,22 @@ export function ResultsPanel() {
             Cancel
           </button>
         )}
-        {phase === 'done' && runResult && (
-          <div className="flex items-center gap-2 text-sm">
+{phase === 'done' && runResult && (
+          <div className="flex items-center gap-2">
+            <div className="mr-1 flex items-center gap-1.5">
+              <button
+                onClick={() => download(`modelmatrix-${tsPrefix()}.md`, toMarkdown(runResult), 'text/markdown')}
+                className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Export .md
+              </button>
+              <button
+                onClick={() => download(`modelmatrix-${tsPrefix()}.csv`, toCsv(runResult), 'text/csv')}
+                className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Export .csv
+              </button>
+            </div>
             <button
               onClick={() => setView('cards')}
               className={

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 
@@ -36,6 +37,36 @@ PUTER_MODEL_ALIASES: dict[str, str] = {
 }
 
 _PUTER_TIMEOUT_S = 120.0
+
+
+class _RetryablePuterError(AdapterError):
+    """Transient Puter failure worth retrying (concurrency/rate/network)."""
+
+
+# Free tier throttles concurrent requests, but different adapters share the
+# same Puter quota. Guard all /drivers/call traffic behind one semaphore.
+_puter_sem: asyncio.Semaphore | None = None
+_puter_sem_limit: int = 0
+
+
+def _is_retryable_error(code: str | None, message: str | None) -> bool:
+    text = f"{code or ''} {message or ''}".lower()
+    if any(k in text for k in ("quota", "subscription", "insufficient", "payment")):
+        return False
+    return any(
+        k in text
+        for k in (
+            "concurrent",
+            "rate",
+            "too many",
+            "too_many",
+            "temporarily",
+            "busy",
+            "timeout",
+            "retry",
+            "try again",
+        )
+    )
 
 
 def _strip_vendor_prefix(model_id: str) -> str:
@@ -77,7 +108,29 @@ class PuterFallbackMixin:
             )
         return {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
 
+    def _puter_semaphore(self) -> asyncio.Semaphore:
+        global _puter_sem, _puter_sem_limit
+        limit = max(1, int(getattr(self._settings, "puter_max_concurrency", 2) or 2))
+        if _puter_sem is None or _puter_sem_limit != limit:
+            _puter_sem = asyncio.Semaphore(limit)
+            _puter_sem_limit = limit
+        return _puter_sem
+
     async def _call_driver(self, method: str, args: dict) -> dict:
+        semaphore = self._puter_semaphore()
+        retries = max(1, int(getattr(self._settings, "puter_max_retries", 3) or 3))
+        backoff = float(getattr(self._settings, "puter_retry_backoff_s", 1.0) or 1.0)
+        async with semaphore:
+            for attempt in range(retries):
+                try:
+                    return await self._driver_once(method, args)
+                except _RetryablePuterError as exc:
+                    if attempt + 1 >= retries:
+                        raise AdapterError(str(exc)) from exc
+                    await asyncio.sleep(backoff * (2**attempt))
+            raise AdapterError("puter: request failed")
+
+    async def _driver_once(self, method: str, args: dict) -> dict:
         payload = {
             "interface": "puter-chat-completion",
             "driver": _PUTER_CHAT_DRIVER,
@@ -85,15 +138,25 @@ class PuterFallbackMixin:
             "test_mode": False,
             "args": args,
         }
-        async with httpx.AsyncClient(timeout=_PUTER_TIMEOUT_S) as client:
-            resp = await client.post(
-                PUTER_DRIVERS_URL, json=payload, headers=self._puter_headers()
-            )
-        body = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=_PUTER_TIMEOUT_S) as client:
+                resp = await client.post(
+                    PUTER_DRIVERS_URL, json=payload, headers=self._puter_headers()
+                )
+        except httpx.HTTPError as exc:
+            raise _RetryablePuterError(f"network error: {exc}") from exc
+        try:
+            body = resp.json()
+        except ValueError as exc:
+            raise AdapterError(
+                f"puter: unexpected response (HTTP {resp.status_code})"
+            ) from exc
         code = body.get("code")
         message = body.get("message") or body.get("error")
         if body.get("success") is False or code or message or resp.status_code >= 400:
             detail = message or code or f"HTTP {resp.status_code}"
+            if _is_retryable_error(code, message):
+                raise _RetryablePuterError(detail)
             raise AdapterError(detail)
         return body
 

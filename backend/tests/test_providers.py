@@ -295,6 +295,53 @@ def test_puter_parse_tool_call_structured():
     assert usage.total_tokens == 66
 
 
+def test_puter_retryable_error_detection():
+    from app.providers.puter import _is_retryable_error
+
+    assert _is_retryable_error(None, "Too many concurrent requests.") is True
+    assert _is_retryable_error("rate_limit_exceeded", None) is True
+    assert _is_retryable_error(None, "temporarily unavailable, try again later") is True
+    assert _is_retryable_error("insufficient_user_quota", None) is False
+    assert _is_retryable_error("subscription_required", None) is False
+    assert _is_retryable_error("not_found", "Model not found: xyz") is False
+
+
+@pytest.mark.asyncio
+async def test_puter_retries_transient_then_raises():
+    import app.providers.puter as puter_mod
+    from app.providers.base import AdapterError
+
+    attempts = {"n": 0}
+
+    async def flaky(method, args):
+        attempts["n"] += 1
+        if attempts["n"] < 3:
+            raise puter_mod._RetryablePuterError("Too many concurrent requests.")
+        return {"success": True, "result": {"ok": True}}
+
+    settings = _FakeSettings({})
+    adapter = OpenAIAdapter(settings)
+    adapter._driver_once = flaky  # type: ignore[method-assign]
+    body = await adapter._call_driver("complete", {})
+    assert body["success"] is True
+    assert attempts["n"] == 3
+
+
+@pytest.mark.asyncio
+async def test_puter_gives_up_after_retries():
+    import app.providers.puter as puter_mod
+    from app.providers.base import AdapterError
+
+    async def always_flaky(method, args):
+        raise puter_mod._RetryablePuterError("Too many concurrent requests.")
+
+    settings = _FakeSettings({})
+    adapter = OpenAIAdapter(settings)
+    adapter._driver_once = always_flaky  # type: ignore[method-assign]
+    with pytest.raises(AdapterError, match="Too many concurrent requests"):
+        await adapter._call_driver("complete", {})
+
+
 def _config(provider, model, effort="low", structured=False):
     return ExperimentConfig(
         provider=provider,
