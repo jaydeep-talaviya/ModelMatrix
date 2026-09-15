@@ -5,4 +5,5 @@ httpx2
 pytest>=8.0
 openai>=1.0
 anthropic>=0.30
-google-genai>=0.4pytest-asyncio
+google-genai>=0.4
+pytest-asyncio
