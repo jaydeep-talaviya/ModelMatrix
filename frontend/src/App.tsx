@@ -46,7 +46,10 @@ function App() {
           <ConfigurationTree />
         </section>
 
-        <section aria-label="Results">
+        <section
+          aria-label="Results"
+          className="lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-1"
+        >
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Results
           </h2>
