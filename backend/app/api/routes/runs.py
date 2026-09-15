@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.core.labels import PROVIDER_DISPLAY
-from app.core.catalog import models_for_provider
+from app.core.model_discovery import live_models
 from app.core.runner import run_experiments
 from app.providers.registry import get_adapter
 from app.schemas.options import ModelOption, OptionsResponse, ProviderOption
@@ -22,7 +22,7 @@ async def execute(request: ExperimentRequest) -> RunResult:
 
 
 @router.get("/options", response_model=OptionsResponse)
-def options() -> OptionsResponse:
+async def options() -> OptionsResponse:
     providers: list[ProviderOption] = []
     for provider in ProviderId:
         adapter = get_adapter(provider)
@@ -33,7 +33,7 @@ def options() -> OptionsResponse:
                 supports_effort=m.supports_effort,
                 supports_structured_output=m.supports_structured_output,
             )
-            for m in models_for_provider(provider)
+            for m in await live_models(provider)
         ]
         providers.append(
             ProviderOption(

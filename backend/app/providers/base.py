@@ -69,6 +69,14 @@ class ProviderAdapter(ABC):
             duration_ms=duration_ms,
         )
 
+    async def list_models(self) -> list[str]:
+        """Return model ids the provider currently offers.
+
+        Subclasses override this for providers with a live models endpoint.
+        Returning an empty list keeps the static catalog as the source.
+        """
+        return []
+
     @abstractmethod
     async def _execute(self, config: ExperimentConfig, prompt: str) -> tuple[str, Usage]:
         """Run the prompt with config's parameters; return (response, usage)."""

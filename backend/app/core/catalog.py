@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from app.schemas.selection import ProviderId
@@ -37,8 +38,71 @@ def get_model(provider: ProviderId, model_id: str) -> ModelSpec:
                     f"model '{model_id}' does not belong to provider '{provider.value}'"
                 )
             return spec
-    raise ValueError(f"unknown model '{model_id}' for provider '{provider.value}'")
+    return infer_spec(provider, model_id)
 
 
 def models_for_provider(provider: ProviderId) -> list[ModelSpec]:
     return [spec for spec in MODEL_CATALOG if spec.provider == provider]
+
+
+# --- Heuristics for models discovered live from the provider APIs ------------
+
+_OPENAI_EFFORT_RE = re.compile(r"^(o\d+|gpt-5(\.[0-9]+)?)")
+_GEMINI_EFFORT_RE = re.compile(r"^gemini-(2\.[5-9]|3\.|4\.)")
+_OPENAI_NON_TEXT_RE = re.compile(
+    r"(embedding|whisper|tts|speech|transcribe|translate|dall|moderation|"
+    r"realtime|image|audio|davinci|babbage|curie|ada|gpt-3)",
+    re.IGNORECASE,
+)
+
+
+def _humanize(model_id: str) -> str:
+    return model_id.replace("-", " ").replace("_", " ").strip().title()
+
+
+def infer_spec(provider: ProviderId, model_id: str) -> ModelSpec:
+    """Build a ModelSpec for an id we've never seen before.
+
+    Capability guesses are best-effort; exact entries in MODEL_CATALOG always
+    take precedence (see ``catalog_specs``).
+    """
+    if provider == ProviderId.OPENAI:
+        supports_effort = bool(_OPENAI_EFFORT_RE.match(model_id))
+    elif provider == ProviderId.GEMINI:
+        supports_effort = bool(_GEMINI_EFFORT_RE.match(model_id))
+    else:  # anthropic
+        supports_effort = "sonnet" in model_id or "opus" in model_id
+
+    return ModelSpec(
+        id=model_id,
+        display_name=_humanize(model_id),
+        provider=provider,
+        supports_effort=supports_effort,
+        supports_structured_output=True,
+    )
+
+
+def is_non_text_openai(model_id: str) -> bool:
+    return bool(_OPENAI_NON_TEXT_RE.search(model_id))
+
+
+def catalog_specs(provider: ProviderId, model_ids: list[str]) -> list[ModelSpec]:
+    """Map discovered model ids to specs, preferring exact catalog entries.
+
+    Falls back to the static catalog when discovery returned nothing.
+    """
+    static = {spec.id: spec for spec in models_for_provider(provider)}
+    specs: list[ModelSpec] = []
+    seen: set[str] = set()
+    for model_id in model_ids:
+        if model_id in seen:
+            continue
+        seen.add(model_id)
+        if model_id in static:
+            specs.append(static[model_id])
+        else:
+            specs.append(infer_spec(provider, model_id))
+
+    if not specs:
+        return models_for_provider(provider)
+    return specs

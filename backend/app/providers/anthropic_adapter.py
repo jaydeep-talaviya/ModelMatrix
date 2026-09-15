@@ -33,6 +33,15 @@ class AnthropicAdapter(ProviderAdapter):
             raise ApiKeyError("anthropic API key is not configured")
         return AsyncAnthropic(api_key=api_key)
 
+    async def list_models(self) -> list[str]:
+        if not self.is_configured():
+            return []
+        try:
+            resp = await self._client().models.list()
+        except Exception:
+            return []
+        return [m.id for m in resp.data if m.id and "claude" in m.id]
+
     def _build_params(self, config: ExperimentConfig, prompt: str) -> dict:
         spec = get_model(config.provider, config.model_id)
         params: dict = {

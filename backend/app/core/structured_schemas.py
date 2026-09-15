@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-PYDANTIC_SCHEMA: dict[str, object] = {
+_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "summary": {"type": "string", "description": "One-sentence summary of the answer."},
@@ -12,9 +12,24 @@ PYDANTIC_SCHEMA: dict[str, object] = {
         },
     },
     "required": ["summary", "answer", "key_details"],
-    "additionalProperties": False,
 }
 
 
+def _base_schema() -> dict[str, object]:
+    return {k: v for k, v in _SCHEMA.items()}
+
+
 def pydantic_json_schema() -> dict[str, object]:
-    return PYDANTIC_SCHEMA
+    """Shared JSON schema (Anthropic tools, Gemini response_schema).
+
+    Deliberately without ``additionalProperties``: Gemini's response_schema
+    rejects unknown fields such as ``additional_properties``.
+    """
+    return _base_schema()
+
+
+def openai_json_schema() -> dict[str, object]:
+    """Strict-mode JSON schema for OpenAI ``json_schema`` structured output."""
+    schema = _base_schema()
+    schema["additionalProperties"] = False
+    return schema

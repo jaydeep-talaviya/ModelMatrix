@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from openai import AsyncOpenAI
 
-from app.core.catalog import get_model
-from app.core.structured_schemas import pydantic_json_schema
+from app.core.catalog import get_model, is_non_text_openai
+from app.core.structured_schemas import openai_json_schema
 from app.providers.base import ApiKeyError, ProviderAdapter
 from app.schemas.experiment import ExperimentConfig
 from app.schemas.results import Usage
@@ -19,6 +19,15 @@ class OpenAIAdapter(ProviderAdapter):
             raise ApiKeyError("openai API key is not configured")
         return AsyncOpenAI(api_key=api_key)
 
+    async def list_models(self) -> list[str]:
+        if not self.is_configured():
+            return []
+        try:
+            resp = await self._client().models.list()
+        except Exception:
+            return []
+        return [m.id for m in resp.data if m.id and not is_non_text_openai(m.id)]
+
     def _build_kwargs(self, config: ExperimentConfig, prompt: str) -> dict:
         spec = get_model(config.provider, config.model_id)
         messages = [{"role": "user", "content": prompt}]
@@ -29,7 +38,7 @@ class OpenAIAdapter(ProviderAdapter):
                 "type": "json_schema",
                 "json_schema": {
                     "name": "result",
-                    "schema": pydantic_json_schema(),
+                    "schema": openai_json_schema(),
                     "strict": True,
                 },
             }

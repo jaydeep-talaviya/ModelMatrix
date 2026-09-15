@@ -26,6 +26,27 @@ class GeminiAdapter(ProviderAdapter):
             raise ApiKeyError("gemini API key is not configured")
         return genai.Client(api_key=api_key)
 
+    async def list_models(self) -> list[str]:
+        if not self.is_configured():
+            return []
+        try:
+            models = []
+            listing = await self._client().aio.models.list(
+                config=types.ListModelsConfig(page_size=1000)
+            )
+            for model in listing.page:
+                name = getattr(model, "name") or ""
+                if name.startswith("models/"):
+                    name = name[len("models/"):]
+                if not name:
+                    continue
+                if not (name.startswith("gemini-") or name.startswith("learnlm-")):
+                    continue
+                models.append(name)
+        except Exception:
+            return []
+        return models
+
     def _build_config(self, config: ExperimentConfig, prompt: str) -> tuple[str, str, types.GenerateContentConfig]:
         spec = get_model(config.provider, config.model_id)
         mime: str | None = None
