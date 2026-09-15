@@ -94,7 +94,7 @@ class PuterFallbackMixin:
         message = body.get("message") or body.get("error")
         if body.get("success") is False or code or message or resp.status_code >= 400:
             detail = message or code or f"HTTP {resp.status_code}"
-            raise AdapterError(f"puter: {detail}")
+            raise AdapterError(detail)
         return body
 
     async def _puter_models(self) -> list[str]:
