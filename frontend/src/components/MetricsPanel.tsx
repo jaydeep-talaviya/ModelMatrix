@@ -53,19 +53,19 @@ const SORT_LABELS: Record<SortKey, string> = {
 }
 
 const VERDICT_HINTS: Record<string, string> = {
-  'Fewest tokens':
-    'Lowest total tokens used by the model (input + output + hidden thinking where reported). Lower = least compute consumed.',
-  Fastest:
-    'Shortest wall-clock time from request sent to full response received, including any model thinking time.',
-  'Most output / input':
-    'Output tokens ÷ input tokens. Higher means the model expands your prompt more. Caveat: it rewards verbosity (long answers), not quality, and a small prompt inflates the number.',
+  'Lowest total tokens':
+    'Lowest total tokens used by the model (input + output + hidden thinking where reported). Good when you want short, direct answers and low compute.',
+  'Shortest time':
+    'Shortest wall-clock time from request sent to full response received. Good for quick checks and many experiments.',
+  'Highest output/input':
+    'Output tokens ÷ input tokens. Good when you want long, expanded answers. Caveat: it rewards verbosity (long answers), not quality, and a small prompt inflates the number.',
 }
 
 const COLUMN_TOOLTIPS: Record<string, string> = {
-  total: 'Input + output + any hidden thinking tokens reported by the provider.',
+  total: 'Input + output + any hidden thinking tokens reported by the provider. Lower = shorter/budget-friendlier.',
   input: 'Tokens sent to the model — your prompt plus system instructions.',
   output: 'Tokens the model generated. +think shows hidden reasoning tokens where the provider reports them (Gemini).',
-  duration: 'Wall-clock time from request sent to full response received, including any model thinking time.',
+  duration: 'Wall-clock time from request sent to full response received, including any model thinking time. Lower = faster to wait for.',
   ratio: 'Output tokens ÷ input tokens. Higher = more expansion of your prompt. Rewards verbosity; noisy for short prompts.',
 }
 
@@ -123,22 +123,22 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
 
   const summaries = [
     {
-      label: 'Fewest tokens',
+      label: 'Lowest total tokens',
       value: successes.length ? formatTokens(minTotal) : '—',
       row: bestOf('total'),
-      hint: 'least compute used',
+      hint: 'good for short, direct answers',
     },
     {
-      label: 'Fastest',
+      label: 'Shortest time',
       value: formatDuration(successes.length ? minDuration : null),
       row: bestOf('duration'),
-      hint: 'shortest wall time',
+      hint: 'good for quick checks',
     },
     {
-      label: 'Most output / input',
+      label: 'Highest output/input',
       value: successes.length ? maxRatio.toFixed(2) : '—',
       row: bestOf('ratio'),
-      hint: 'most efficient at expanding a short prompt',
+      hint: 'good for long, expanded answers',
     },
   ]
 
@@ -146,6 +146,12 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
 
   return (
     <div className="space-y-4">
+      <p className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11px] leading-relaxed text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+        No single config is “best” — pick by your goal: small/quick questions
+        want fewer tokens and shorter times; hard or open-ended tasks want
+        higher effort and longer answers. These cards just point at the
+        notable values from this run.
+      </p>
       <div className="grid gap-3 sm:grid-cols-3">
         {summaries.map(({ label, value, row, hint }) => (
           <div
@@ -266,9 +272,10 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
 
       {minTotal > 0 && (
         <p className="text-[11px] text-gray-400">
-          Green highlights = best-in-column among successful runs. 'Thinking'
-          tokens are Gemini's hidden reasoning and only appear when the provider
-          reports them (total − input − output).
+          Green marks the lowest or highest value in a column — an observation
+          for your chosen goal, not a judgment that a config is “better”.
+          'Thinking' tokens are Gemini's hidden reasoning and only appear when
+          the provider reports them (total − input − output).
         </p>
       )}
     </div>
