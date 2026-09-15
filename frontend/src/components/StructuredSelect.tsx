@@ -18,47 +18,55 @@ export function StructuredSelect({ provider, modelId }: StructuredSelectProps) {
   const { modelBranch, dispatch } = useTree()
   const selections = modelBranch(provider, modelId)?.structured ?? []
 
-  const plain = selections.some((s) => !s.enabled)
+  const masterOn = selections.some((s) => s.enabled)
   const active = new Set(
     selections.filter((s) => s.enabled && s.format).map((s) => s.format as StructuredOutputFormat),
   )
 
-  const commit = (plainOn: boolean, formats: Set<StructuredOutputFormat>) => {
+  const commit = (on: boolean, formats: Set<StructuredOutputFormat>) => {
     const next: typeof selections = []
-    if (plainOn) next.push({ enabled: false, format: null })
-    for (const format of FORMATS) {
-      if (formats.has(format)) next.push({ enabled: true, format })
+    if (on) {
+      for (const format of FORMATS) {
+        if (formats.has(format)) next.push({ enabled: true, format })
+      }
     }
     dispatch({ type: 'SET_STRUCTURED', provider, modelId, selections: next })
   }
 
+  const toggleFormat = (format: StructuredOutputFormat, checked: boolean) => {
+    const formats = new Set(active)
+    if (checked) {
+      formats.add(format)
+    } else {
+      if (formats.size <= 1) return // keep at least one format selected
+      formats.delete(format)
+    }
+    commit(true, formats)
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-x-1 gap-y-1.5">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
       <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
-        Output:
+        Structured output:
       </span>
       <Checkbox
-        checked={plain}
-        onChange={(checked) => {
-          const formats = new Set(active)
-          if (!checked && formats.size === 0) formats.add('csv')
-          commit(checked, formats)
-        }}
-        label="No structure"
+        checked={masterOn}
+        onChange={(checked) => commit(checked, new Set(['csv']))}
+        label={masterOn ? 'Enabled' : 'Disabled'}
       />
-      {FORMATS.map((format) => (
-        <Checkbox
-          key={format}
-          checked={active.has(format)}
-          onChange={(checked) => {
-            const formats = new Set(active)
-            if (checked) formats.add(format)
-            else formats.delete(format)
-            commit(plain, formats)
-          }}
-          label={FORMAT_DISPLAY[format]}
-        />
-      ))}
+      {masterOn && (
+        <>
+          <span className="text-xs text-gray-400">Format:</span>
+          {FORMATS.map((format) => (
+            <Checkbox
+              key={format}
+              checked={active.has(format)}
+              onChange={(checked) => toggleFormat(format, checked)}
+              label={FORMAT_DISPLAY[format]}
+            />
+          ))}
+        </>
+      )}
     </div>
   )
 }
