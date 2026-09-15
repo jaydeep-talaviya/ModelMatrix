@@ -1,4 +1,5 @@
 import { formatCompactTokens } from '../lib/labels'
+import { priceFor } from '../lib/pricing'
 import { useTree } from '../store/TreeContext'
 import type { ProviderId } from '../types'
 import { ModelInfoRow, Tooltip } from './Tooltip'
@@ -50,6 +51,15 @@ export function ModelName({ provider, modelId, className }: ModelNameProps) {
             value={`${formatCompactTokens(meta.max_output_tokens)} tokens`}
           />
         )}
+        {priceFor(provider, modelId) && (
+          <ModelInfoRow
+            label="Price /1M tokens"
+            value={`$${priceFor(provider, modelId).input} in, $${priceFor(provider, modelId).output} out`}
+          />
+        )}
+      </span>
+      <span className="mt-1 block text-[10px] italic text-gray-400 dark:text-gray-500">
+        Price is an estimate from published list rates; your bill may differ.
       </span>
       {!hasSpecs && (
         <span className="mt-1 block text-[10px] italic text-gray-400 dark:text-gray-500">

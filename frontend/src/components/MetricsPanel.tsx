@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 
 import { formatDuration, formatTokens } from '../lib/labels'
+import { estimateCost, formatCost } from '../lib/pricing'
 import type { ExperimentResult } from '../types'
 import { ConfigLabel } from './ConfigLabel'
 import { Tooltip } from './Tooltip'
 
-type SortKey = 'total' | 'input' | 'output' | 'thinking' | 'duration' | 'ratio'
+type SortKey = 'total' | 'input' | 'output' | 'thinking' | 'duration' | 'ratio' | 'cost'
 
 interface MetricRow {
   key: string
@@ -16,6 +17,7 @@ interface MetricRow {
   total: number
   duration: number | null
   ratio: number | null
+  cost: number | null
 }
 
 function buildRows(results: ExperimentResult[]): MetricRow[] {
@@ -31,6 +33,12 @@ function buildRows(results: ExperimentResult[]): MetricRow[] {
     const durationMs = result.duration_ms
     const ratio =
       input != null && output != null && input > 0 ? output / input : null
+    const cost = estimateCost(
+      result.config.provider,
+      result.config.model_id,
+      input,
+      output,
+    )
     return {
       key: result.config_id,
       result,
@@ -40,6 +48,7 @@ function buildRows(results: ExperimentResult[]): MetricRow[] {
       total: total ?? 0,
       duration: durationMs,
       ratio,
+      cost,
     }
   })
 }
@@ -51,11 +60,13 @@ const SORT_LABELS: Record<SortKey, string> = {
   thinking: 'Thinking',
   duration: 'Duration',
   ratio: 'Out/In',
+  cost: 'Est. cost',
 }
 
 const COLUMN_TOOLTIPS: Record<string, string> = {
   total: 'Input + output + any hidden thinking tokens reported by the provider. Lower = shorter/budget-friendlier.',
   ratio: 'Output tokens ÷ input tokens. Higher = more expansion of your prompt. Rewards verbosity; noisy for short prompts.',
+  cost: 'Estimate from the provider\u2019s list price for this model (in\u00d7input + out\u00d7output). Not your actual bill \u2014 batch/caching/discount pricing and fees are excluded.',
 }
 
 export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
@@ -81,6 +92,9 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
   const maxRatio = successes.length
     ? Math.max(...successes.map((r) => r.ratio ?? 0))
     : 0
+  const minCost = successes.length
+    ? Math.min(...successes.map((r) => r.cost ?? Infinity))
+    : 0
 
   const toggleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -91,7 +105,7 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
     }
   }
 
-  const bestOf = (key: 'total' | 'duration' | 'ratio') => {
+  const bestOf = (key: 'total' | 'duration' | 'ratio' | 'cost') => {
     if (!successes.length) return null
     let best: MetricRow | null = null
     for (const r of successes) {
@@ -106,6 +120,8 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
       )
         best = r
       else if (key === 'ratio' && (r.ratio ?? -1) > (best.ratio ?? -1)) best = r
+      else if (key === 'cost' && (r.cost ?? Infinity) < (best.cost ?? Infinity))
+        best = r
     }
     return best
   }
@@ -129,6 +145,12 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
       row: bestOf('ratio'),
       hint: 'good for long, expanded answers',
     },
+    {
+      label: 'Lowest est. cost',
+      value: successes.length ? formatCost(minCost) : '—',
+      row: bestOf('cost'),
+      hint: 'good for heavy daily use',
+    },
   ]
 
   const anyThinking = rows.some((r) => r.thinking > 0)
@@ -141,7 +163,7 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
         higher effort and longer answers. These cards just point at the
         notable values from this run.
       </p>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {summaries.map(({ label, value, row, hint }) => (
           <div
             key={label}
@@ -170,7 +192,7 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
           <thead className="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
             <tr>
               <th className="px-3 py-2 font-medium">Configuration</th>
-{(["total", "input", "output", "duration", "ratio"] as SortKey[]).map(
+{(["total", "input", "output", "duration", "ratio", "cost"] as SortKey[]).map(
                 (key) =>
                   (key !== 'ratio' || successes.length > 0) && (
                     <th
@@ -200,6 +222,7 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
               const isMinDuration =
                 success && row.duration != null && row.duration === minDuration
               const isMaxRatio = success && row.ratio != null && row.ratio === maxRatio
+              const isMinCost = success && row.cost != null && row.cost === minCost
               return (
                 <tr key={row.key} className={success ? '' : 'opacity-50'}>
                   <td className="max-w-[220px] px-3 py-2 text-gray-700 dark:text-gray-200">
@@ -252,6 +275,14 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
                   >
                     {row.ratio != null ? row.ratio.toFixed(2) : '—'}
                   </td>
+                  <td
+                    className={
+                      'whitespace-nowrap px-3 py-2 text-gray-600 dark:text-gray-300 ' +
+                      (isMinCost ? 'font-semibold text-green-600 dark:text-green-400' : '')
+                    }
+                  >
+                    {formatCost(row.cost)}
+                  </td>
                 </tr>
               );
             })}
@@ -264,7 +295,9 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
           Green marks the lowest or highest value in a column — an observation
           for your chosen goal, not a judgment that a config is “better”.
           'Thinking' tokens are Gemini's hidden reasoning and only appear when
-          the provider reports them (total − input − output).
+          the provider reports them (total − input − output). Est. cost is
+          computed from the provider's list price per 1M tokens — an estimate,
+          not your actual bill.
         </p>
       )}
     </div>
