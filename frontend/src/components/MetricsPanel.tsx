@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import { describeConfig, formatDuration, formatTokens } from '../lib/labels'
-import { InfoIcon, Tooltip } from './Tooltip'
+import { InfoIcon } from './Tooltip'
 import type { ExperimentResult } from '../types'
 
 type SortKey = 'total' | 'input' | 'output' | 'thinking' | 'duration' | 'ratio'
@@ -52,20 +52,8 @@ const SORT_LABELS: Record<SortKey, string> = {
   ratio: 'Out/In',
 }
 
-const VERDICT_HINTS: Record<string, string> = {
-  'Lowest total tokens':
-    'Lowest total tokens used by the model (input + output + hidden thinking where reported). Good when you want short, direct answers and low compute.',
-  'Shortest time':
-    'Shortest wall-clock time from request sent to full response received. Good for quick checks and many experiments.',
-  'Highest output/input':
-    'Output tokens ÷ input tokens. Good when you want long, expanded answers. Caveat: it rewards verbosity (long answers), not quality, and a small prompt inflates the number.',
-}
-
 const COLUMN_TOOLTIPS: Record<string, string> = {
   total: 'Input + output + any hidden thinking tokens reported by the provider. Lower = shorter/budget-friendlier.',
-  input: 'Tokens sent to the model — your prompt plus system instructions.',
-  output: 'Tokens the model generated. +think shows hidden reasoning tokens where the provider reports them (Gemini).',
-  duration: 'Wall-clock time from request sent to full response received, including any model thinking time. Lower = faster to wait for.',
   ratio: 'Output tokens ÷ input tokens. Higher = more expansion of your prompt. Rewards verbosity; noisy for short prompts.',
 }
 
@@ -159,10 +147,7 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
             className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
           >
             <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
-              <Tooltip text={VERDICT_HINTS[label]}>
-                {label}
-                <InfoIcon />
-              </Tooltip>
+              {label}
             </p>
             <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {value}
@@ -180,22 +165,20 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
           <thead className="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
             <tr>
               <th className="px-3 py-2 font-medium">Configuration</th>
-              {(["total", "input", "output", "duration", "ratio"] as SortKey[]).map(
+{(["total", "input", "output", "duration", "ratio"] as SortKey[]).map(
                 (key) =>
                   (key !== 'ratio' || successes.length > 0) && (
                     <th
                       key={key}
                       onClick={() => toggleSort(key)}
                       className="cursor-pointer select-none whitespace-nowrap px-3 py-2 font-medium hover:text-gray-900 dark:hover:text-gray-100"
-                      title={`Sort by ${SORT_LABELS[key]}`}
+                      title={COLUMN_TOOLTIPS[key]}
                     >
                       <div>
-                      <Tooltip text={COLUMN_TOOLTIPS[key]}>
                         {SORT_LABELS[key]}
-                        <InfoIcon />
-                      </Tooltip>
-                      {sortKey === key ? (desc ? ' ↓' : ' ↑') : ''}
-                    </div>
+                        {COLUMN_TOOLTIPS[key] && <InfoIcon />}
+                        {sortKey === key ? (desc ? ' ↓' : ' ↑') : ''}
+                      </div>
                     </th>
                   ),
               )}
