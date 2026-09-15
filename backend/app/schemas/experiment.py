@@ -2,19 +2,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, model_validator
 
+from app.core.labels import EFFORT_DISPLAY, PROVIDER_DISPLAY
 from app.schemas.selection import EffortLevel, ProviderId, StructuredOutputFormat
-
-PROVIDER_DISPLAY: dict[ProviderId, str] = {
-    ProviderId.OPENAI: "OpenAI",
-    ProviderId.GEMINI: "Gemini",
-    ProviderId.ANTHROPIC: "Anthropic",
-}
-
-EFFORT_DISPLAY: dict[EffortLevel, str] = {
-    EffortLevel.LOW: "Low",
-    EffortLevel.MEDIUM: "Medium",
-    EffortLevel.HIGH: "High",
-}
 
 
 class ExperimentConfig(BaseModel):
