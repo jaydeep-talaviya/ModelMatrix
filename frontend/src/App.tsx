@@ -39,7 +39,10 @@ function App() {
       </header>
 
       <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[1fr_1fr]">
-        <section aria-label="Prompt and configuration" className="min-h-[50vh]">
+        <section
+          aria-label="Prompt and configuration"
+          className="lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-1"
+        >
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Configuration
           </h2>
