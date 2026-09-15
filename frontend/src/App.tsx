@@ -1,4 +1,5 @@
 import { ConfigurationTree } from './components/ConfigurationTree'
+import { HelpSection } from './components/HelpSection'
 import { ResultsPanel } from './components/ResultsPanel'
 import { useTree } from './store/TreeContext'
 
@@ -52,6 +53,10 @@ function App() {
           <ResultsPanel />
         </section>
       </main>
+
+      <div className="mx-auto max-w-7xl px-4 pb-8">
+        <HelpSection />
+      </div>
     </div>
   )
 }
