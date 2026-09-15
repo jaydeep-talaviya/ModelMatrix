@@ -46,14 +46,14 @@ class PuterFallbackMixin:
     """Route a provider through Puter's free-tier chat driver.
 
     Activates when the provider's own API key isn't set but a Puter auth token
-    is present, or when the provider is listed in PUTER_ROUTE (which forces the
-    route even for providers whose key is set but has no credits).
+    is present, or when the provider is listed in PROVIDER_USING_PUTER (which
+    forces the route even for providers whose key is set but has no credits).
     """
 
     def uses_puter(self) -> bool:
         if not self._settings.puter_auth_token:
             return False
-        if self.provider in self._settings.puter_route_providers:
+        if self.provider in self._settings.puter_providers:
             return True
         return not self._settings.has_provider_key(self.provider)
 

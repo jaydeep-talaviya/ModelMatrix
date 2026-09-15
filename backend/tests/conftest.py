@@ -16,7 +16,7 @@ def _no_key_settings():
         gemini_api_key=None,
         anthropic_api_key=None,
         puter_auth_token=None,
-        puter_route="",
+        provider_using_puter="",
     )
 
 

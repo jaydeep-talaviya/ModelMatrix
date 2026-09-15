@@ -200,7 +200,7 @@ def test_anthropic_plain_leaves_prompt_unchanged():
 
 class _FakeSettings:
     puter_auth_token = "token"
-    puter_route = ""
+    provider_using_puter = ""
 
     def __init__(self, keys):
         self._keys = keys
@@ -209,8 +209,12 @@ class _FakeSettings:
         return provider_id in self._keys
 
     @property
-    def puter_route_providers(self):
-        return {p.strip().lower() for p in (self.puter_route or "").split(",") if p.strip()}
+    def puter_providers(self):
+        return {
+            p.strip().lower()
+            for p in (self.provider_using_puter or "").split(",")
+            if p.strip()
+        }
 
 
 def test_puter_used_when_key_missing():
@@ -226,9 +230,9 @@ def test_puter_not_used_without_token():
     assert OpenAIAdapter(settings).uses_puter() is False
 
 
-def test_puter_route_forces_with_key():
+def test_puter_selected_via_provider_using_puter():
     settings = _FakeSettings(["openai"])
-    settings.puter_route = "openai"
+    settings.provider_using_puter = "openai"
     adapter = OpenAIAdapter(settings)
     assert adapter.uses_puter() is True
     assert adapter.configured_via == "puter"
