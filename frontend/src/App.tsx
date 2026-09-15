@@ -1,6 +1,7 @@
 import { ComparePanel } from './components/ComparePanel'
 import { ConfigurationTree } from './components/ConfigurationTree'
 import { HelpSection } from './components/HelpSection'
+import { PlansPanel } from './components/PlansPanel'
 import { PromptInput } from './components/PromptInput'
 import { ResultsPanel } from './components/ResultsPanel'
 import { useTree } from './store/TreeContext'
@@ -70,6 +71,7 @@ function App() {
 
       <div className="mx-auto max-w-7xl space-y-6 px-4 pb-8">
         <ComparePanel />
+        <PlansPanel />
         <HelpSection />
       </div>
     </div>
