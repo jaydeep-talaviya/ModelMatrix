@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { runExperiments } from '../lib/api'
-import { describeConfig, formatDuration, formatTokens } from '../lib/labels'
+import { formatDuration, formatTokens } from '../lib/labels'
 import { toExperimentRequest } from '../lib/toRequest'
 import { useTree } from '../store/TreeContext'
 import type { RunResult } from '../types'
+import { ConfigLabel } from './ConfigLabel'
 import { MetricsPanel } from './MetricsPanel'
 import { ResultCard } from './ResultCard'
 
@@ -201,8 +202,8 @@ export function ResultsPanel() {
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                   {results.map((result) => (
                     <tr key={result.config_id}>
-                      <td className="whitespace-nowrap px-3 py-2 text-gray-700 dark:text-gray-200">
-                        {describeConfig(result.config)}
+                      <td className="max-w-[240px] whitespace-nowrap px-3 py-2 text-gray-700 dark:text-gray-200">
+                        <ConfigLabel config={result.config} />
                       </td>
                       <td className="px-3 py-2">
                         <span

@@ -13,20 +13,22 @@ class ModelSpec:
     provider: ProviderId
     supports_effort: bool
     supports_structured_output: bool
+    context_window: int | None = None
+    max_output_tokens: int | None = None
 
 
 MODEL_CATALOG: tuple[ModelSpec, ...] = (
     # OpenAI
-    ModelSpec("gpt-4o", "GPT-4o", ProviderId.OPENAI, False, True),
-    ModelSpec("gpt-4o-mini", "GPT-4o mini", ProviderId.OPENAI, False, True),
-    ModelSpec("o3-mini", "o3 mini", ProviderId.OPENAI, True, True),
+    ModelSpec("gpt-4o", "GPT-4o", ProviderId.OPENAI, False, True, 128_000, 16_384),
+    ModelSpec("gpt-4o-mini", "GPT-4o mini", ProviderId.OPENAI, False, True, 128_000, 16_384),
+    ModelSpec("o3-mini", "o3 mini", ProviderId.OPENAI, True, True, 200_000, 100_000),
     # Gemini
-    ModelSpec("gemini-2.0-flash", "Gemini 2.0 Flash", ProviderId.GEMINI, False, True),
-    ModelSpec("gemini-2.5-flash", "Gemini 2.5 Flash", ProviderId.GEMINI, True, True),
-    ModelSpec("gemini-2.5-pro", "Gemini 2.5 Pro", ProviderId.GEMINI, True, True),
+    ModelSpec("gemini-2.0-flash", "Gemini 2.0 Flash", ProviderId.GEMINI, False, True, 1_048_576, 8_192),
+    ModelSpec("gemini-2.5-flash", "Gemini 2.5 Flash", ProviderId.GEMINI, True, True, 1_048_576, 65_536),
+    ModelSpec("gemini-2.5-pro", "Gemini 2.5 Pro", ProviderId.GEMINI, True, True, 1_048_576, 65_536),
     # Anthropic
-    ModelSpec("claude-3-5-sonnet", "Claude 3.5 Sonnet", ProviderId.ANTHROPIC, False, True),
-    ModelSpec("claude-3-5-haiku", "Claude 3.5 Haiku", ProviderId.ANTHROPIC, False, True),
+    ModelSpec("claude-3-5-sonnet", "Claude 3.5 Sonnet", ProviderId.ANTHROPIC, False, True, 200_000, 8_192),
+    ModelSpec("claude-3-5-haiku", "Claude 3.5 Haiku", ProviderId.ANTHROPIC, False, True, 200_000, 8_192),
 )
 
 
@@ -79,7 +81,33 @@ def infer_spec(provider: ProviderId, model_id: str) -> ModelSpec:
         provider=provider,
         supports_effort=supports_effort,
         supports_structured_output=True,
+        context_window=_guess_context_window(provider, model_id),
+        max_output_tokens=_guess_max_output(provider, model_id),
     )
+
+
+def _guess_context_window(provider: ProviderId, model_id: str) -> int | None:
+    if provider == ProviderId.OPENAI:
+        if "mini" in model_id:
+            return 128_000
+        return 200_000
+    if provider == ProviderId.GEMINI:
+        return 1_048_576
+    if "haiku" in model_id:
+        return 200_000
+    return 200_000
+
+
+def _guess_max_output(provider: ProviderId, model_id: str) -> int | None:
+    if provider == ProviderId.OPENAI:
+        if "mini" in model_id:
+            return 16_384
+        return 100_000
+    if provider == ProviderId.GEMINI:
+        if re.match(r"^gemini-2\.0", model_id):
+            return 8_192
+        return 65_536
+    return 8_192
 
 
 def is_non_text_openai(model_id: str) -> bool:

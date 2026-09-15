@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 
-import { describeConfig, formatDuration, formatTokens } from '../lib/labels'
-import { Tooltip } from './Tooltip'
+import { formatDuration, formatTokens } from '../lib/labels'
 import type { ExperimentResult } from '../types'
+import { ConfigLabel } from './ConfigLabel'
+import { Tooltip } from './Tooltip'
 
 type SortKey = 'total' | 'input' | 'output' | 'thinking' | 'duration' | 'ratio'
 
@@ -152,8 +153,12 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
             <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {value}
             </p>
-            <p className="mt-0.5 truncate text-[11px] text-gray-600 dark:text-gray-300" title={row ? describeConfig(row.result.config) : ''}>
-              {row ? describeConfig(row.result.config) : 'no successful runs'}
+            <p className="mt-0.5 block min-w-0 truncate text-[11px] text-gray-600 dark:text-gray-300">
+              {row ? (
+                <ConfigLabel config={row.result.config} />
+              ) : (
+                'no successful runs'
+              )}
             </p>
             <p className="text-[10px] text-gray-400">{hint}</p>
           </div>
@@ -175,7 +180,7 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
                     >
                       <div>
                         {COLUMN_TOOLTIPS[key] ? (
-                          <Tooltip text={COLUMN_TOOLTIPS[key]}>
+                          <Tooltip content={COLUMN_TOOLTIPS[key]}>
                             {SORT_LABELS[key]}
                           </Tooltip>
                         ) : (
@@ -197,12 +202,9 @@ export function MetricsPanel({ results }: { results: ExperimentResult[] }) {
               const isMaxRatio = success && row.ratio != null && row.ratio === maxRatio
               return (
                 <tr key={row.key} className={success ? '' : 'opacity-50'}>
-                  <td className="max-w-[180px] truncate px-3 py-2 text-gray-700 dark:text-gray-200">
-                    <span
-                      title={describeConfig(row.result.config)}
-                      className="block truncate"
-                    >
-                      {describeConfig(row.result.config)}
+                  <td className="max-w-[220px] px-3 py-2 text-gray-700 dark:text-gray-200">
+                    <span className="block truncate">
+                      <ConfigLabel config={row.result.config} />
                     </span>
                     <span
                       className={

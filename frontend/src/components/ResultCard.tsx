@@ -1,7 +1,8 @@
 import { useState } from 'react'
 
-import { describeConfig, displayResponse, formatDuration, formatTokens } from '../lib/labels'
+import { displayResponse, formatDuration, formatTokens } from '../lib/labels'
 import type { ExperimentResult } from '../types'
+import { ConfigLabel } from './ConfigLabel'
 
 const COLLAPSE_CHARS = 420
 
@@ -19,11 +20,8 @@ export function ResultCard({ result }: ResultCardProps) {
   return (
     <article className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
       <div className="flex items-start justify-between gap-2">
-        <h3
-          className="min-w-0 break-words text-xs font-medium leading-snug text-gray-800 dark:text-gray-100"
-          title={describeConfig(config)}
-        >
-          {describeConfig(config)}
+        <h3 className="min-w-0 text-xs font-medium leading-snug">
+          <ConfigLabel config={config} />
         </h3>
         <span
           className={

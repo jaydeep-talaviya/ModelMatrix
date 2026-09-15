@@ -32,6 +32,8 @@ async def options() -> OptionsResponse:
                 display_name=m.display_name,
                 supports_effort=m.supports_effort,
                 supports_structured_output=m.supports_structured_output,
+                context_window=m.context_window,
+                max_output_tokens=m.max_output_tokens,
             )
             for m in await live_models(provider)
         ]

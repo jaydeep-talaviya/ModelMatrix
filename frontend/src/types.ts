@@ -11,6 +11,8 @@ export interface ModelOption {
   display_name: string
   supports_effort: boolean
   supports_structured_output: boolean
+  context_window?: number | null
+  max_output_tokens?: number | null
 }
 
 export interface ProviderOption {

@@ -10,6 +10,8 @@ class ModelOption(BaseModel):
     display_name: str
     supports_effort: bool
     supports_structured_output: bool
+    context_window: int | None = None
+    max_output_tokens: int | None = None
 
 
 class ProviderOption(BaseModel):
