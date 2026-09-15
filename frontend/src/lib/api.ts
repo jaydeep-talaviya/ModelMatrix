@@ -26,9 +26,11 @@ export function getOptions(): Promise<OptionsResponse> {
 
 export function runExperiments(
   body: ExperimentRequest,
+  signal?: AbortSignal,
 ): Promise<RunResult> {
   return request<RunResult>('/runs', {
     method: 'POST',
     body: JSON.stringify(body),
+    signal,
   })
 }

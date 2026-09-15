@@ -1,8 +1,9 @@
 import { ConfigurationTree } from './components/ConfigurationTree'
+import { ResultsPanel } from './components/ResultsPanel'
 import { useTree } from './store/TreeContext'
 
 function App() {
-  const { options, optionsError, state } = useTree()
+  const { options, optionsError } = useTree()
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -48,12 +49,7 @@ function App() {
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Results
           </h2>
-          <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400 dark:border-gray-700">
-            Experiment results render here (Phase 7). Selected providers:{' '}
-            {Object.keys(state.branches).length
-              ? Object.keys(state.branches).join(', ')
-              : 'none yet'}
-          </div>
+          <ResultsPanel />
         </section>
       </main>
     </div>
