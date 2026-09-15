@@ -1,3 +1,4 @@
+import { formatCompactTokens } from '../lib/labels'
 import { useTree } from '../store/TreeContext'
 import type { ProviderId } from '../types'
 import { ModelInfoRow, Tooltip } from './Tooltip'
@@ -6,13 +7,6 @@ interface ModelNameProps {
   provider: ProviderId
   modelId: string
   className?: string
-}
-
-function formatTokensCount(value: number | null | undefined): string {
-  if (value == null) return '—'
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)}M`
-  if (value >= 1_000) return value.toLocaleString('en-US')
-  return String(value)
 }
 
 export function ModelName({ provider, modelId, className }: ModelNameProps) {
@@ -47,13 +41,13 @@ export function ModelName({ provider, modelId, className }: ModelNameProps) {
         {meta?.context_window != null && (
           <ModelInfoRow
             label="Context window"
-            value={`${formatTokensCount(meta.context_window)} tokens`}
+            value={`${formatCompactTokens(meta.context_window)} tokens`}
           />
         )}
         {meta?.max_output_tokens != null && (
           <ModelInfoRow
             label="Max output"
-            value={`${formatTokensCount(meta.max_output_tokens)} tokens`}
+            value={`${formatCompactTokens(meta.max_output_tokens)} tokens`}
           />
         )}
       </span>
