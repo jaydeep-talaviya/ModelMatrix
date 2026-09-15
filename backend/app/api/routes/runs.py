@@ -42,6 +42,7 @@ async def options() -> OptionsResponse:
                 id=provider,
                 display_name=PROVIDER_DISPLAY[provider],
                 configured=adapter.is_configured(),
+                via=getattr(adapter, "configured_via", None),
                 models=models,
                 efforts=[e for e in EffortLevel],
             )

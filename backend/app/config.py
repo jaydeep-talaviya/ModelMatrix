@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     gemini_api_key: str | None = None
     anthropic_api_key: str | None = None
+    puter_auth_token: str | None = None
 
     def has_provider_key(self, provider_id: str) -> bool:
         return bool(getattr(self, f"{provider_id}_api_key", None))

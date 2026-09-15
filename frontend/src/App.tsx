@@ -27,10 +27,16 @@ function App() {
                       ? 'rounded-full bg-green-100 px-2 py-0.5 text-green-700 dark:bg-green-900/40 dark:text-green-300'
                       : 'rounded-full bg-gray-100 px-2 py-0.5 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
                   }
-                  title={p.configured ? `${p.display_name} configured` : `${p.display_name} key not set`}
+                  title={
+                    p.configured
+                      ? p.via === 'puter'
+                        ? `${p.display_name} via Puter free tier`
+                        : `${p.display_name} configured`
+                      : `${p.display_name} key not set`
+                  }
                 >
                   {p.display_name}
-                  {p.configured ? ' ✓' : ' —'}
+                  {p.configured ? ` ✓${p.via === 'puter' ? ' · Puter' : ''}` : ' —'}
                 </span>
               ))
             ) : (

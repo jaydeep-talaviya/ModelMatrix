@@ -6,6 +6,7 @@ from google.genai import types
 from app.core.catalog import get_model
 from app.core.structured_schemas import pydantic_json_schema
 from app.providers.base import ApiKeyError, ProviderAdapter
+from app.providers.puter import PuterFallbackMixin
 from app.schemas.experiment import ExperimentConfig
 from app.schemas.results import Usage
 
@@ -16,7 +17,7 @@ EFFORT_TO_THINKING_BUDGET: dict[str, int] = {
 }
 
 
-class GeminiAdapter(ProviderAdapter):
+class GeminiAdapter(PuterFallbackMixin, ProviderAdapter):
     provider = "gemini"
 
     def _client(self) -> genai.Client:
@@ -27,7 +28,7 @@ class GeminiAdapter(ProviderAdapter):
         return genai.Client(api_key=api_key)
 
     async def list_models(self) -> list[str]:
-        if not self.is_configured():
+        if not self._settings.has_provider_key(self.provider):
             return []
         try:
             models = []
@@ -66,6 +67,8 @@ class GeminiAdapter(ProviderAdapter):
         return config.model_id, prompt, gen_config
 
     async def _execute(self, config: ExperimentConfig, prompt: str) -> tuple[str, Usage]:
+        if self.uses_puter():
+            return await self._run_via_puter(config, prompt)
         client = self._client()
         model, user_prompt, gen_config = self._build_config(config, prompt)
 

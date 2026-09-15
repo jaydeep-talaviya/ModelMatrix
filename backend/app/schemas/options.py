@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 from app.schemas.selection import EffortLevel, ProviderId
@@ -18,6 +20,7 @@ class ProviderOption(BaseModel):
     id: ProviderId
     display_name: str
     configured: bool
+    via: Literal["native", "puter"] | None = None
     models: list[ModelOption]
     efforts: list[EffortLevel]
 

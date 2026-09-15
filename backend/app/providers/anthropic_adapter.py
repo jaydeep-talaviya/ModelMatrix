@@ -7,6 +7,7 @@ from anthropic import AsyncAnthropic
 from app.core.catalog import get_model
 from app.core.structured_schemas import pydantic_json_schema
 from app.providers.base import ApiKeyError, ProviderAdapter
+from app.providers.puter import PuterFallbackMixin
 from app.schemas.experiment import ExperimentConfig
 from app.schemas.results import Usage
 
@@ -23,7 +24,7 @@ EFFORT_TO_THINKING_BUDGET: dict[str, int] = {
 }
 
 
-class AnthropicAdapter(ProviderAdapter):
+class AnthropicAdapter(PuterFallbackMixin, ProviderAdapter):
     provider = "anthropic"
 
     def _client(self) -> AsyncAnthropic:
@@ -34,7 +35,7 @@ class AnthropicAdapter(ProviderAdapter):
         return AsyncAnthropic(api_key=api_key)
 
     async def list_models(self) -> list[str]:
-        if not self.is_configured():
+        if not self._settings.has_provider_key(self.provider):
             return []
         try:
             resp = await self._client().models.list()
@@ -62,6 +63,8 @@ class AnthropicAdapter(ProviderAdapter):
         return params
 
     async def _execute(self, config: ExperimentConfig, prompt: str) -> tuple[str, Usage]:
+        if self.uses_puter():
+            return await self._run_via_puter(config, prompt)
         client = self._client()
         params = self._build_params(config, prompt)
         resp = await client.messages.create(**params)

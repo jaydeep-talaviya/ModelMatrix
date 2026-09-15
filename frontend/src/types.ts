@@ -19,6 +19,7 @@ export interface ProviderOption {
   id: ProviderId
   display_name: string
   configured: boolean
+  via?: 'native' | 'puter' | null
   models: ModelOption[]
   efforts: EffortLevel[]
 }
