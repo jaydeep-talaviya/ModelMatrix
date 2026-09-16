@@ -5,6 +5,39 @@ Tree-based LLM parameter comparison — send one prompt to many provider/model/e
 **Live demo:** https://modelmatrix-gold.vercel.app
 **API:** https://modelmatrix-api.vercel.app (`/api/health`, `/api/options`, `/api/runs`)
 
+## Why does ModelMatrix exist?
+
+Picking a model for a task is usually a messy, multi-step process: you open several
+provider dashboards, sign up for multiple accounts, hunt down API keys, write vendor-specific
+code for each one, and then eyeball results across different tools to figure out which model
+is actually faster, cheaper, or better for your prompt.
+
+ModelMatrix removes that friction. It is a single, browse-and-click tool that:
+
+- **Democratizes model evaluation** — no parallel codebases or provider SDKs needed. Everyone
+  (engineers, researchers, students, curious non-developers) can test models directly from a web UI.
+- **Compares apples to apples** — the same prompt, run against any mix of OpenAI, Gemini, and
+  Anthropic models at different effort levels and with or without structured output, all at once.
+- **Puts the numbers side by side** — latency, token usage, and estimated cost per response are
+  computed automatically, instead of guessing from dashboards.
+- **Works for zero-cost demos** — through the Puter free tier, OpenAI/Anthropic can be compared
+  with no paid API key at all, which makes it practical for classrooms, hackathons, and evaluations.
+- **Surfaces the trade-offs** — a neutral Compare section flags the longest/largest response and
+  the cheapest option, so the data — not an opinion — drives the decision.
+
+### Typical use cases
+
+- **Model selection** — before committing to a model in production, run a realistic prompt against
+  the candidates and compare quality, latency, and price.
+- **Budget/quality trade-off checks** — see whether a pricier flagship model is materially better
+  than a cheap one for *your* prompt, with per-leaf cost estimates.
+- **Prompt tuning across vendors** — find out which model/effort combination responds best to a
+  given instruction or schema (structured output) style.
+- **Teaching and demos** — a no-keys-required playground for showing how models differ and how
+  token prices add up, without giving out API credentials.
+- **Evaluation snapshots** — run the comparison, export the results as Markdown or CSV, and keep a
+  record for a report or a later regression check.
+
 ## What it does
 
 - Pick a **provider** (OpenAI, Gemini, Anthropic), **model**, **effort level**, and **structured output** on/off — each combination becomes a leaf in the comparison tree.
