@@ -1,6 +1,10 @@
 import type { ExperimentRequest, OptionsResponse, RunResult } from '../types'
 
-const BASE = '/api'
+// Same-origin (/api) in dev (Vite proxy) and when backend serves the frontend;
+// VITE_API_BASE overrides it (e.g. a separate deployed API origin).
+const BASE =
+  (import.meta.env as Record<string, string | undefined>).VITE_API_BASE?.replace(/\/+$/, '') ??
+  '/api'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
