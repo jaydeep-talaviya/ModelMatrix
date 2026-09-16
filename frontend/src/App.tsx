@@ -1,3 +1,4 @@
+import { AboutSection } from './components/AboutSection'
 import { ComparePanel } from './components/ComparePanel'
 import { ConfigurationTree } from './components/ConfigurationTree'
 import { HelpSection } from './components/HelpSection'
@@ -47,6 +48,8 @@ function App() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6">
+        <AboutSection />
+
         <section aria-label="Prompt" className="mb-6">
           <PromptInput />
         </section>
