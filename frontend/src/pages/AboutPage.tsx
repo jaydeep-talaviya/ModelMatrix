@@ -1,8 +1,8 @@
-const aboutPoints = [
+const sections = [
   {
     title: 'Why this app exists',
     body: (
-      <p className="text-sm">
+      <p>
         Trying to pick a model usually means juggling dashboards, SDKs, and API
         keys across several providers. ModelMatrix removes that: you type one
         prompt, pick any mix of OpenAI, Gemini, and Anthropic models (plus
@@ -58,7 +58,7 @@ const aboutPoints = [
   {
     title: 'Zero-cost demo',
     body: (
-      <p className="text-sm">
+      <p>
         OpenAI and Anthropic calls go through the Puter free tier, so you can
         test the flow with no paid API key. Gemini runs through the official
         SDK with a demo/free key.
@@ -67,24 +67,24 @@ const aboutPoints = [
   },
 ]
 
-export function AboutSection() {
+export function AboutPage() {
   return (
-    <section aria-label="About this app" className="mt-6">
-      <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+    <main className="mx-auto max-w-3xl px-4 py-8">
+      <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
         About this app
-      </h2>
-      <div className="divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white dark:divide-gray-800 dark:border-gray-700 dark:bg-gray-900">
-        {aboutPoints.map((point) => (
-          <details key={point.title} className="group px-4 py-3" open>
-            <summary className="cursor-pointer select-none text-sm font-medium text-gray-800 marker:text-gray-400 dark:text-gray-100">
-              {point.title}
-            </summary>
-            <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
-              {point.body}
+      </h1>
+      <div className="mt-6 space-y-10">
+        {sections.map((section) => (
+          <section key={section.title}>
+            <h2 className="text-sm font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              {section.title}
+            </h2>
+            <div className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
+              {section.body}
             </div>
-          </details>
+          </section>
         ))}
       </div>
-    </section>
+    </main>
   )
 }
